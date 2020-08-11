@@ -1,25 +1,25 @@
 import hierarchy
 
 
-@hierarchy.skill
+@hierarchy.Skill
 def move_objects(num_objects):
     for cnt in range(num_objects):
         move_obj(cnt)
 
 
-# @hierarchy.skill
+@hierarchy.Skill
 def move_obj(step_count):
     pick_obj(step_count)
     place_obj()
 
 
-@hierarchy.skill
+@hierarchy.Action
 def pick_obj(_step_count):
     print(3)
     return 3
 
 
-@hierarchy.skill
+@hierarchy.Action
 def place_obj():
     print(5)
     return 5
