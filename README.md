@@ -1,7 +1,6 @@
 # Multi-Task Hierarchical Imitation Learning for Home Automation
 
-This is code for the paper [Multi-Task Hierarchical Imitation Learning for Home Automation](https://roydfox.com/pub/Fox2019Multi/), *Roy Fox\*, Ron Berenstein\*, Ion Stoica, and Ken Goldberg*, CASE 2019.
-It enables running the *HIL-MT* server, generating annotated demonstrations, learning hierarchical controllers, and rolloing learned controllers on an HSR robot.
+
 
 ## Installation
 
