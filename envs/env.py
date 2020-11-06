@@ -1,5 +1,5 @@
-#Action.py
-import hierarchy
+#env.py
+from agents import hierarchy
 
 class Action(hierarchy.Skill):
     pass
