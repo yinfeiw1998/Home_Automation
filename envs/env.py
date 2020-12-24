@@ -2,18 +2,6 @@
 from agents import hierarchy
 
 class Action(hierarchy.Skill):
-    pass
+    def __init__(self, skill_func):
+        super(Action, self).__init__(skill_func)
 
-
-class Env(object):
-    def init_arg(self, task_name):
-        raise NotImplementedError
-
-    def reset(self, task_name):
-        return self.init_arg(task_name)
-
-    def observe(self):
-        raise NotImplementedError
-
-    def step(self, act_name, act_arg):
-        raise NotImplementedError
