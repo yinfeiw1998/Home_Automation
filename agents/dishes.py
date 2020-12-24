@@ -6,15 +6,15 @@ import hierarchy
 # import utils
 from envs.dishes import DishesEnv
 import pyramid
-from envs import hsr
+# from envs import hsr
 
 PRETRAINED = False
 
 V = 0.07
 OMEGA = math.pi / 5.
 
-@hierarchy.Skill
-def MoveObjects(task_id):
+
+def MoveObjects(env, task_id):
     """
     arg: [task_id]
     ret_val: after MoveObject: [success]
@@ -26,20 +26,18 @@ def MoveObjects(task_id):
         MoveObject(task_id, obj_cnt)
 
 
-@hierarchy.Skill
-def MoveHome():
+def MoveHome(env):
     """
     arg: None
     ret_val: None
     """
     print("MoveHome")
-    hsr.MoveGripper(0)
-    hsr.MoveArm(0.45,0.,0.,-math.pi / 2., -math.pi / 2.)
-    hsr.MoveBaseAbs(0., 0., 0., V, OMEGA)
+    env.MoveGripper(0)
+    env.MoveArm(0.45,0.,0.,-math.pi / 2., -math.pi / 2.)
+    env.MoveBaseAbs(0., 0., 0., V, OMEGA)
 
 
-@hierarchy.Skill
-def MoveObject(task_id, obj_cnt):
+def MoveObject(env, task_id, obj_cnt):
     """
     arg: [task_id, obj_cnt]
     ret_val: after PickObject: [obj_class, obj_color]
@@ -75,8 +73,7 @@ def MoveObject(task_id, obj_cnt):
         raise NotImplementedError
 
 
-@hierarchy.Skill
-def PickObject(obj_class, obj_color):
+def PickObject(env, obj_class, obj_color):
     """
     arg: [obj_class, obj_color]
     ret_val: after MoveToObject: [obj_class, obj_color]; after GraspObject: [obj_class, obj_color]
@@ -94,8 +91,7 @@ def PickObject(obj_class, obj_color):
     return obj_class, obj_color
 
 
-@hierarchy.Skill
-def PlaceObject(task_id, obj_class, obj_color):
+def PlaceObject(env, task_id, obj_class, obj_color):
     """
     arg: [task_id, obj_class, obj_color]
     ret_val: None
@@ -123,21 +119,20 @@ def PlaceObject(task_id, obj_class, obj_color):
     else:
         raise NotImplementedError
     
-    hsr.MoveBaseAbs(x, y, theta, V, OMEGA)
-    hsr.MoveArm(z, -math.pi / 2., 0., -math.pi / 2., -math.pi / 2.)
+    env.MoveBaseAbs(x, y, theta, V, OMEGA)
+    env.MoveArm(z, -math.pi / 2., 0., -math.pi / 2., -math.pi / 2.)
     MoveHome()
 
 
-@hierarchy.Skill
-def MoveToObject(obj_class, obj_color, motion_cnt):
+def MoveToObject(env, obj_class, obj_color, motion_cnt):
     """
     arg: [obj_class, obj_color, motion_cnt]
     ret_val: after LocateObject: [obj_class, obj_color, obj_pixel_x, obj_pixel_y]; after MoveToLocation: [obj_class, obj_color]
     """
     print("MoveToObject")
-    hsr.MoveHead(-math.pi / 4., 0.)
+    env.MoveHead(-math.pi / 4., 0.)
     # print("MoveHead")
-    found_obj_class, found_obj_color, obj_pixel_x, obj_pixel_y = hsr.LocateObject(motion_cnt, obj_class, obj_color)
+    found_obj_class, found_obj_color, obj_pixel_x, obj_pixel_y = env.LocateObject(motion_cnt, obj_class, obj_color)
     if DishesEnv.obj_classes[found_obj_class] is None:
         return found_obj_class, found_obj_color
     else:
@@ -145,7 +140,6 @@ def MoveToObject(obj_class, obj_color, motion_cnt):
         return obj_class, obj_color
 
 
-@hierarchy.Skill
 def GraspObject(obj_class, obj_color):
     """
     arg: [obj_class, obj_color]
@@ -157,14 +151,13 @@ def GraspObject(obj_class, obj_color):
         'cup': 0.4,
     }[DishesEnv.obj_classes[obj_class]]
     
-    hsr.MoveArm(z, -math.pi / 2., 0., -math.pi / 2., -math.pi / 2.)
-    hsr.MoveGripper(1)
-    hsr.MoveArm(0.65, -math.pi / 2., 0., -math.pi / 2., -math.pi / 2.)
+    env.MoveArm(z, -math.pi / 2., 0., -math.pi / 2., -math.pi / 2.)
+    env.MoveGripper(1)
+    env.MoveArm(0.65, -math.pi / 2., 0., -math.pi / 2., -math.pi / 2.)
     return obj_class, obj_color
 
 
 
-@hierarchy.Skill
 def MoveToLocation(obj_class, obj_color, obj_pixel_x, obj_pixel_y):
     """
     arg: [obj_class, obj_color, obj_pixel_x, obj_pixel_y]

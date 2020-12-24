@@ -1,4 +1,5 @@
 import inspect
+from functools import partial
 
 class Recorder(object):
     def __init__(self):
@@ -12,8 +13,14 @@ class Skill(object):
     def __init__(self, skill_func):
         self.name = skill_func.__name__
         self.skill_func = skill_func
+        print(self.name)
+
+    def __get__(self, instance, owner):
+        print('get here')
+        return partial(self.__call__, instance)
 
     def __call__(self, *args):
+        print(type(self))
         cnt = [0]
         ret_name = [None]
         ret_val = [None]
@@ -38,7 +45,7 @@ class Skill(object):
             # root skill 
             caller_locals = None
             recorder = Recorder()
-
+        
         rvals = self.skill_func(*args)
 
         if caller_locals is not None: 
@@ -50,4 +57,27 @@ class Skill(object):
             # TODO: dump recorder
         return rvals
 
+class C(object):
+    @Skill
+    def moveObject(self):
+        print("move Object")
+        a = [1,2,3]
+        self.moveEverything()
 
+    def moveEverything(self):
+        print("move Everything")
+        self.moveTable()
+        self.moveChair()
+        self.moveCups()
+
+    @Skill
+    def moveTable(self):
+        print("move table")
+
+    @Skill
+    def moveChair(self):
+        print("move chair")
+
+    @Skill
+    def moveCups(self):
+        print("move Cups")
