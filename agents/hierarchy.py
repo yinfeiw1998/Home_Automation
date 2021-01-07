@@ -9,6 +9,8 @@ class Recorder(object):
         self.trace.append(kwargs)
 
 
+# def Skill(skillset):
+
 class Skill(object):
     def __init__(self, skill_func):
         self.name = skill_func.__name__
@@ -32,12 +34,12 @@ class Skill(object):
                 recorder = caller_locals['recorder']
                 recorder.record(
                     skill_name= caller_locals['self'].name,
-                    skill_arg= caller_locals['args'],
+                    skill_arg= caller_locals['args'][1:],   ## start from the second arg because all the skills' first argument is self
                     skill_cnt= caller_locals['cnt'][0],
                     ret_name= caller_locals['ret_name'][0],
                     ret_val= caller_locals['ret_val'][0],
                     sub_name= self.name,
-                    sub_arg= args)
+                    sub_arg= args[1:])  ## start from the second arg because all the skills' first argument is self
 
                 caller_locals['cnt'][0] += 1
                 break
@@ -53,31 +55,39 @@ class Skill(object):
             caller[0].f_locals['ret_name'][0] = self.name
             caller[0].f_locals['ret_val'][0] = rvals
         else:
-            print(recorder.trace)
+            return recorder.trace
             # TODO: dump recorder
         return rvals
 
-class C(object):
-    @Skill
-    def moveObject(self):
-        print("move Object")
-        a = [1,2,3]
-        self.moveEverything()
+# class C(object):
+#     @Skill
+#     def moveObject(self):
+#         print("move Object")
+#         a = [1,2,3]
+#         self.moveEverything()
 
-    def moveEverything(self):
-        print("move Everything")
-        self.moveTable()
-        self.moveChair()
-        self.moveCups()
+#     def moveEverything(self):
+#         print("move Everything")
+#         self.moveTable()
+#         self.moveChair()
+#         self.moveCups()
 
-    @Skill
-    def moveTable(self):
-        print("move table")
+#     @Skill
+#     def moveTable(self):
+#         print("move table")
 
-    @Skill
-    def moveChair(self):
-        print("move chair")
+#     @Skill
+#     def moveChair(self):
+#         print("move chair")
 
-    @Skill
-    def moveCups(self):
-        print("move Cups")
+#     @Skill
+#     def moveCups(self):
+#         print("move Cups")
+
+class SkillSet(object):
+    pass
+
+class HierarchicalAgent(SkillSet):
+    def __init__(self, env):
+        SkillSet.__init__(self)
+        self.env = env
