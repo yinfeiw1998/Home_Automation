@@ -96,7 +96,7 @@ def agent(domain_name, agent_name):
             agent_skills = AgentSkill.query.filter(AgentSkill.domain_name == domain_name, AgentSkill.agent_name == agent_name).all()
             res = [agent_skill.as_dict() for agent_skill in agent_skills]
         return flask.jsonify(res)
-    except Exception, e:
+    except (Exception, e):
         if DEBUG:
             print(traceback.format_exc())
             flask.request.environ.get('werkzeug.server.shutdown')()

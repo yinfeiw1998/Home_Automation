@@ -147,6 +147,8 @@ class DictTree(collections.Mapping):
         def default(self, o):
             if isinstance(o, DictTree):
                 return vars(o)
+            # elif callable(o) and hasattr(o, 'skill'):
+            #     return o.skill.name
             else:
                 return super(DictTree.JSONEncoder, self).default(o)
 

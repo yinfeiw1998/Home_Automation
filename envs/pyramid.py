@@ -1,4 +1,4 @@
-import hsr
+from envs import hsr
 
 
 class PyramidEnv(hsr.HSREnv):

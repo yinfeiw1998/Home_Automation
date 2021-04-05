@@ -13,4 +13,4 @@ def pad(x, l):
     if x is None:
         return [0.] * l
     assert len(x) <= l, (len(x), l, x)
-    return x + ([0.] * (l - len(x)))
+    return x + tuple([0.] * (l - len(x)))

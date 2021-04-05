@@ -2,12 +2,12 @@
 import math
 import pickle
 
-import Skill from hierarchy
-import SkillSet from hierarchy
-import HierarchicalAgent from hierarchy
+from agents.hierarchy import Skill
+from agents.hierarchy import SkillSet
+from agents.hierarchy import HierarchicalAgent
 # import utils
 from envs.dishes import DishesEnv
-import pyramid
+from agents import pyramid
 # from envs import hsr
 
 PRETRAINED = False
@@ -15,15 +15,20 @@ PRETRAINED = False
 V = 0.07
 OMEGA = math.pi / 5.
 
-class DishesAgent(SkillSet):
+class DishesAgent(HierarchicalAgent):
+    def __init__(self, domain, task, data, teacher, env):
+        HierarchicalAgent.__init__(self, domain, task, data, teacher, env)
+        self.default_model_name = "log_poly2"
+        
+
     #TODO: what if more than one skillset for skill in a class
-    @Skill
+    @Skill(arg_in_len=1, sub_skill_names=['MoveHome', "MoveObject"], ret_out_len=0)
     def MoveObjects(skillset, task_id):  #root skill define in this class(with env) MoveObjects
         """
         arg: [task_id]
         ret_val: after MoveObject: [success]
         """
-        print("MoveObjects")
+        # print("MoveObjects")
         skillset.MoveHome()
         
         for obj_cnt in range(6):
@@ -31,7 +36,7 @@ class DishesAgent(SkillSet):
 
     root_skill = MoveObjects
 
-    @Skill
+    @Skill(arg_in_len=0, sub_skill_names=["MoveGripper", "MoveArm", "MoveBaseAbs"], ret_out_len=0)
     def MoveHome(skillset):
         """
         arg: None
@@ -42,7 +47,7 @@ class DishesAgent(SkillSet):
         skillset.env.MoveArm(0.45,0.,0.,-math.pi / 2., -math.pi / 2.)
         skillset.env.MoveBaseAbs(0., 0., 0., V, OMEGA)
 
-    @Skill
+    @Skill(model_name='table|log_poly2', arg_in_len=2, max_cnt=3, sub_skill_names=["PickOBject", "PlaceObject"], ret_out_len=1)
     def MoveObject(skillset, task_id, obj_cnt):
         """
         arg: [task_id, obj_cnt]
@@ -78,7 +83,7 @@ class DishesAgent(SkillSet):
         else:
             raise NotImplementedError
 
-    @Skill
+    @Skill(arg_in_len=2, sub_skill_names=["MoveToObject", "GraspOBject"], ret_out_len=2)
     def PickObject(skillset, obj_class, obj_color):
         """
         arg: [obj_class, obj_color]
@@ -96,7 +101,7 @@ class DishesAgent(SkillSet):
 
         return obj_class, obj_color
 
-    @Skill
+    @Skill(arg_in_len=3, sub_skill_names=["MoveBaseAbs", "MoveArm", "MoveHome"], ret_out_len=0)
     def PlaceObject(skillset, task_id, obj_class, obj_color):
         """
         arg: [task_id, obj_class, obj_color]
@@ -127,9 +132,9 @@ class DishesAgent(SkillSet):
         
         skillset.env.MoveBaseAbs(x, y, theta, V, OMEGA)
         skillset.env.MoveArm(z, -math.pi / 2., 0., -math.pi / 2., -math.pi / 2.)
-        skillset.env.MoveHome()
+        skillset.MoveHome()
 
-    @Skill
+    @Skill(model_name="t_log_poly2", arg_in_len=3, max_cnt=4, sub_skill_names=["MoveHead", "LocateObject", "MoveToLocation"], ret_out_len=2)
     def MoveToObject(skillset, obj_class, obj_color, motion_cnt):
         """
         arg: [obj_class, obj_color, motion_cnt]
@@ -145,7 +150,7 @@ class DishesAgent(SkillSet):
             obj_class, obj_color = skillset.MoveToLocation(found_obj_class, found_obj_color, obj_pixel_x, obj_pixel_y)
             return obj_class, obj_color
 
-    @Skill
+    @Skill(arg_in_len=2, sub_skill_names=["MoveArm", "MoveGripper"], ret_out_len=2)
     def GraspObject(skillset, obj_class, obj_color):
         """
         arg: [obj_class, obj_color]
@@ -157,13 +162,13 @@ class DishesAgent(SkillSet):
             'cup': 0.4,
         }[DishesEnv.obj_classes[obj_class]]
         
-        skillset.MoveArm(z, -math.pi / 2., 0., -math.pi / 2., -math.pi / 2.)
-        skillset.MoveGripper(1)
-        skillset.MoveArm(0.65, -math.pi / 2., 0., -math.pi / 2., -math.pi / 2.)
+        skillset.env.MoveArm(z, -math.pi / 2., 0., -math.pi / 2., -math.pi / 2.)
+        skillset.env.MoveGripper(1)
+        skillset.env.MoveArm(0.65, -math.pi / 2., 0., -math.pi / 2., -math.pi / 2.)
         return obj_class, obj_color
 
 
-    @Skill
+    @Skill(arg_in_len=4, sub_skill_names=['MoveBaseRel'], ret_out_len=2)
     def MoveToLocation(skillset, obj_class, obj_color, obj_pixel_x, obj_pixel_y):
         """
         arg: [obj_class, obj_color, obj_pixel_x, obj_pixel_y]

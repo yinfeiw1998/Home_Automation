@@ -4,9 +4,9 @@ import time
 
 import numpy as np
 
-from hierarchy import SkillSet
-from hierarchy import HierarchicalAgent
-import hierarchy
+from agents.hierarchy import SkillSet
+from agents.hierarchy import HierarchicalAgent
+from agents import hierarchy
 from envs import hsr
 # from envs.pyramid import PyramidEnv
 

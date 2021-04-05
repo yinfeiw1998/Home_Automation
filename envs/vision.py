@@ -1,11 +1,11 @@
 import numpy as np
 
-# try:
-#     import pyyolo
-# except ImportError:
-#     print("Please follow these instructions to install pyyolo: https://github.com/digitalbrain79/pyyolo#building")
-#     print("then update the paths in vision.py to your installation path")
-#     raise
+try:
+    import pyyolo
+except ImportError:
+    print("Please follow these instructions to install pyyolo: https://github.com/digitalbrain79/pyyolo#building")
+    print("then update the paths in vision.py to your installation path")
+    raise
 
 
 class Yolo(object):

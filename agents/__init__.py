@@ -1,7 +1,9 @@
 #__init__.py
+from agents import dishes
+from agents import pyramid
 
-def catalog(name, env):
+def catalog(domain, task, data, teacher, env):
     return {
         'dishes': dishes.DishesAgent,
         'pyramid': pyramid.PyramidAgent,
-    }[name](env)
+    }[domain](domain, task, data, teacher, env)
