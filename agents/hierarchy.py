@@ -4,6 +4,8 @@ import utils
 from utils import DictTree
 import pickle
 
+import itertools
+
 class Recorder(object):
     def __init__(self):
         self.trace = []
@@ -38,11 +40,19 @@ class Skill(object):
     def __call__(self, func):  
         # print("classnfunc", func)
         self.name = func.__name__
+        print(func)
+        # try:
+        #     func = load_skill(self.name, self.sub_skill_names)
+        #     print("get here")
+        # except IOError:
+        #     print("not here")
+        #     pass
+
         self.func = func
         # classIns = classnfunc[0] if len(classnfunc)==2 else None
         # print(dir(args[0]))
         def wrapper(*args):
-            print("name", func.__name__)
+            # print("name", func.__name__)
             save_arg_in_len = self.arg_in_len
             save_ret_out_len = self.ret_out_len
 
@@ -81,56 +91,32 @@ class Skill(object):
             ####################################
             ###For here, it did not support function method
             # print(classIns)
-            print("classIns", dir(classIns))
-            skill = classIns.skillset[self.name] if hasattr(classIns, 'skillset') else 0 # get the trained function
-            if skill!=0 and skill.step!=0:#if in training stage
-                trained_function = skill.step
-                # if hasattr(classIns, 'skillset'):
-                #     print(classIns.skillset[self.name])
-                skill.model_name = self.model_name if self.model_name!=None else classIns.default_model_name
-                skill.arg_in_len = self.arg_in_len
-                skill.max_cnt = self.max_cnt
-                skill.sub_skill_names = self.sub_skill_names
-                skill.ret_out_len = self.ret_out_len
-                skill.min_valid_data = self.min_valid_data
-                skill.sub_arg_accuracy = self.sub_arg_accuracy
+            # print("classIns", dir(classIns))
+            rvals = self.func(*args)
 
-                ### ret_in_len arg_out_len
-                # print("checkcheck", self.sub_skill_names[0])
-                # print("checkglobals", getattr(classIns, self.sub_skill_names[0]).skill.arg_in_len)
-                if [subSkill for subSkill in self.sub_skill_names if hasattr(classIns, subSkill)]:
-                    skill.ret_in_len = max([getattr(classIns, subSkill).skill.arg_in_len for subSkill in self.sub_skill_names if hasattr(classIns, subSkill)])
-                    skill.arg_out_len = max([getattr(classIns, subSkill).skill.ret_out_len for subSkill in self.sub_skill_names if hasattr(classIns, subSkill)])
-                else:
-                    skill.ret_in_len = 0
-                    skill.arg_out_len = 0
-     
-                sub_name = None
-                sub_args = None
-                rvals = None
-                # print(arg[0].)
+            # Record one more for the end of each Skill
+            try:
+                getattr(args[0], self.name)
+                print(self.name, "get here")
+                for caller_afterall in inspect.stack()[1:]:
+                    caller_locals_afterall = caller_afterall[0].f_locals
+                    if ('self' in caller_locals_afterall) and isinstance(caller_locals_afterall['self'], Skill):
+                        
+                        recorder = caller_locals_afterall['recorder']
+                        recorder.record(
+                            name= caller_locals_afterall['self'].name,
+                            arg= caller_locals_afterall['args'][1:],   ## start from the second arg because all the skills' first argument is self
+                            cnt= caller_locals_afterall['cnt'][0],
+                            ret_name= caller_locals_afterall['ret_name'][0],
+                            ret_val= caller_locals_afterall['ret_val'][0],
+                            sub_name= self.name,
+                            sub_arg= args[1:])  ## start from the second arg because all the skills' first argument is self
 
-                if caller_locals == None:  # if root skill
-                    sub_name = self.func
-                    sub_args = args
-                else:
-                    # print("caller_locals: ", caller_locals)
-                    # print(caller_locals['args'], 
-                    #     caller_locals['cnt'], caller_locals['ret_name'], 
-                    #     caller_locals['ret_val'], None, skill)
-                    print(self.name)
-                    print("input: ",caller_locals['args'][1:], 
-                        caller_locals['cnt'], caller_locals['ret_name'][0], 
-                        caller_locals['ret_val'][0], [0], skill)
-                    sub_name, sub_args = trained_function(caller_locals['args'][1:], 
-                        caller_locals['cnt'], caller_locals['ret_name'][0], 
-                        caller_locals['ret_val'][0], [0], skill)
-                    sub_name = getattr(classIns, sub_name)
-                rvals = sub_name(*sub_args)
-            else: #if in predicting stage
-                #we did not handle the situation if it is function skill
-                rvals = self.func(*args)
-
+                        caller_locals_afterall['cnt'][0] += 1
+                        break
+            except AttributeError:
+                pass
+            
             if caller_locals is not None: 
                 caller[0].f_locals['ret_name'][0] = self.name
                 caller[0].f_locals['ret_val'][0] = rvals
@@ -138,7 +124,6 @@ class Skill(object):
                 return recorder.trace
                 # TODO: dump recorder
             return rvals
-        wrapper.skill = self
         return wrapper
 
 
@@ -165,8 +150,8 @@ class HierarchicalAgent(SkillSet):
         self.skills = [i for i in dir(self)[:dir(self).index("__class__")]]  ##use raise error here
         # print(self.skills)
         # print("teacher:", teacher)
-        self.skillset = dict({skill : DictTree(step= load_skill(domain, task, data, skill) if teacher else 0)
-        for skill in (self.skills)})
+        # self.skillset = dict({skill : DictTree(step= load_skill(domain, task, data, skill) if not teacher else 0)
+        # for skill in (self.skills)})
         # print(self.skillset)
         # for skill in (self.skills + env.actions)})
 
@@ -176,35 +161,61 @@ class HierarchicalAgent(SkillSet):
         self.env = env
 
 
-def load_skill(domain, task, data, skill_name):
-    model = pickle.load(open("{}/{}/{}/{}.pkl".format(data, domain, task, skill_name), 'rb'))
+def load_skill(name, sub_skill_names):
+    model = pickle.load(open("model/dishes/ClearTable/{}.pkl".format(name), 'rb'))
+    sub_skill_names = [sub_skill_names]
+    def skill_func(skillset, *args):
+        # nonlocal sub_skill_names
+        ret_name = None
+        ret_val = None
+        for cnt in itertools.count():
+            # figure out how to go from ret_name to one-hot (None -> 0, others lookup in sub_skill_names)
+            sub_skill_names[0] += [None] 
+            iput = list(args) + [cnt] + utils.one_hot(sub_skill_names[0].index(ret_name), len(sub_skill_names[0])) + [ret_val]
+            oput = model.predict([iput])
+            sub_name = sub_skill_names[0][oput.sub[0]]
+            sub_arg = list(oput.arg[0])
+            if sub_name is None:
+                # adapt your outgoing ret_val to the length expected by the receiver (your caller)
+                # pad if needed
+                return sub_arg[:caller_skill.ret_in_len]
+            else:
+                sub_skill = skillset.__getattr__(sub_name)
+                sub_arg = sub_arg[:sub_skill.arg_in_len]
+                ret_name = sub_name
+                ret_val = sub_skill(*sub_arg)
 
-    def step(arg, cnt, ret_name, ret_val, obs, skill):  ## we dont need obs here for now
-        if arg is not None:
-            print(arg)
-            print(arg[skill.arg_in_len:])
-            assert not any(arg[skill.arg_in_len:])
-            arg = arg[:skill.arg_in_len]
-        if ret_val is not None:
-            assert not any(ret_val[skill.ret_in_len:])
-            ret_val = ret_val[:skill.ret_in_len]
-        sub_skill_names = [None] + skill.sub_skill_names
-        iput = (list(utils.pad(arg, skill.arg_in_len)) + [cnt]
-                + utils.one_hot(sub_skill_names.index(ret_name), len(sub_skill_names))
-                + utils.pad(ret_val, skill.ret_in_len)
-                + obs)
-        print(iput)
-        oput = model.predict([iput])
-        sub_name = sub_skill_names[oput.sub[0]]
-        sub_arg = list(oput.arg[0])
-        if sub_name is None:
-            return None, sub_arg
-        else:
-            assert not any(sub_arg[skill.arg_out_len:])
-            sub_arg = sub_arg[:skill.arg_out_len]
-            return sub_name, sub_arg
+    return skill_func
 
-    return step
+# def load_skill(domain, task, data, skill_name):
+#     model = pickle.load(open("{}/{}/{}/{}.pkl".format(data, domain, task, skill_name), 'rb'))
+#
+#     def step(arg, cnt, ret_name, ret_val, obs, skill):  ## we dont need obs here for now
+#         if arg is not None:
+#             print(arg)
+#             print(arg[skill.arg_in_len:])
+#             assert not any(arg[skill.arg_in_len:])
+#             arg = arg[:skill.arg_in_len]
+#         if ret_val is not None:
+#             assert not any(ret_val[skill.ret_in_len:])
+#             ret_val = ret_val[:skill.ret_in_len]
+#         sub_skill_names = [None] + skill.sub_skill_names
+#         iput = (list(utils.pad(arg, skill.arg_in_len)) + [cnt]
+#                 + utils.one_hot(sub_skill_names.index(ret_name), len(sub_skill_names))
+#                 + utils.pad(ret_val, skill.ret_in_len)
+#                 + obs)
+#         print(iput)
+#         oput = model.predict([iput])
+#         sub_name = sub_skill_names[oput.sub[0]]
+#         sub_arg = list(oput.arg[0])
+#         if sub_name is None:
+#             return None, sub_arg
+#         else:
+#             assert not any(sub_arg[skill.arg_out_len:])
+#             sub_arg = sub_arg[:skill.arg_out_len]
+#             return sub_name, sub_arg
+#
+#     return step
 
 
 
